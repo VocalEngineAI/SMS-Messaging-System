@@ -134,7 +134,7 @@ export default function LoginPage() {
             {passwordError && <p className="text-sm text-danger">{passwordError}</p>}
           </div>
 
-          <Button type="submit" isLoading={isLoading} className="mt-2 w-full">
+          <Button type="submit" size="sm" isLoading={isLoading} className="mt-2 w-full">
             Sign In
             {!isLoading && <ArrowRight size={16} />}
           </Button>

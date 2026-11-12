@@ -194,7 +194,7 @@ export default function SendSmsPage() {
               </span>
             </div>
 
-            <Button className="w-full shrink-0" onClick={() => setIsConfirmOpen(true)} disabled={!canSend || isSending}>
+            <Button size="sm" className="w-full shrink-0" onClick={() => setIsConfirmOpen(true)} disabled={!canSend || isSending}>
               <Send size={16} />
               Send SMS
             </Button>

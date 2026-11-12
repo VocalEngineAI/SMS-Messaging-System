@@ -129,19 +129,19 @@ export default function ContactsPage() {
   }
 
   return (
-    <div>
+    <div className="flex min-h-full flex-col">
       <PageHeader
         title="Contacts"
         description="Manage your imported customer contact lists."
         action={
           <div className="flex gap-2">
             {lastImportBatchId && (
-              <Button variant="outline" onClick={() => setIsUndoConfirmOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setIsUndoConfirmOpen(true)}>
                 <Undo2 size={16} />
                 Undo Last Import
               </Button>
             )}
-            <Button onClick={() => setIsImportOpen(true)}>
+            <Button size="sm" onClick={() => setIsImportOpen(true)}>
               <Upload size={16} />
               Import CSV
             </Button>
@@ -149,8 +149,8 @@ export default function ContactsPage() {
         }
       />
 
-      <Card>
-        <CardContent className="p-4">
+      <Card className="flex-1">
+        <CardContent className="grow-0 p-4">
           <Input
             placeholder="Search by name, phone, or email..."
             icon={<Search size={16} />}

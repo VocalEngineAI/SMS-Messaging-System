@@ -4,16 +4,8 @@ import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { parseContactsCsv, type CsvImportResult, type ParsedCsvRow } from "@/lib/csv";
-import { formatDateOfBirth } from "@/lib/date";
+import { parseContactsCsv, type CsvImportResult } from "@/lib/csv";
 import type { Contact } from "@/types/contact";
-
-const ROW_STATUS_TONE: Record<ParsedCsvRow["rowStatus"], "success" | "warning" | "danger"> = {
-  valid: "success",
-  duplicate: "warning",
-  invalid: "danger",
-};
 
 type Props = {
   isOpen: boolean;
@@ -58,12 +50,15 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
     handleClose();
   }
 
+  const duplicateNames = result?.rows.filter((row) => row.rowStatus === "duplicate").map((row) => row.name || row.phone || "—");
+  const invalidNames = result?.rows.filter((row) => row.rowStatus === "invalid").map((row) => row.name || row.phone || "—");
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
       title="Import Contacts"
-      description="Upload a CSV file with columns: name, phone, email, date of birth, coinBalance, consent."
+      description="Upload a CSV file with a header row naming: name, phone, email, date of birth, coins, consent (any column order)."
       widthClassName="max-w-3xl"
       footer={
         result && (
@@ -91,7 +86,9 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
           </span>
           <div>
             <p className="text-sm font-semibold text-primary">Drag and drop a CSV file, or browse</p>
-            <p className="mt-1 text-xs text-secondary">Expected columns: name, phone, email, date of birth, coinBalance, consent</p>
+            <p className="mt-1 text-xs text-secondary">
+              Header row columns (any order): name (or first/last name), phone, email, date of birth, coins, consent
+            </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button size="sm" onClick={() => fileInputRef.current?.click()}>
@@ -127,38 +124,19 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
             </div>
           </div>
 
-          <div className="max-h-72 overflow-y-auto rounded-lg border border-subtle">
-            <table className="w-full min-w-[480px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-subtle bg-app text-secondary">
-                  <th className="px-4 py-2 font-medium">#</th>
-                  <th className="px-4 py-2 font-medium">Name</th>
-                  <th className="px-4 py-2 font-medium">Phone</th>
-                  <th className="px-4 py-2 font-medium">Email</th>
-                  <th className="px-4 py-2 font-medium">Date of Birth</th>
-                  <th className="px-4 py-2 font-medium">Coins</th>
-                  <th className="px-4 py-2 font-medium">Consent</th>
-                  <th className="px-4 py-2 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.rows.map((row, index) => (
-                  <tr key={index} className="border-b border-subtle last:border-0">
-                    <td className="px-4 py-2 text-secondary">{index + 1}</td>
-                    <td className="px-4 py-2 text-primary">{row.name || "—"}</td>
-                    <td className="px-4 py-2 text-secondary">{row.phone || "—"}</td>
-                    <td className="px-4 py-2 text-secondary">{row.email || "—"}</td>
-                    <td className="px-4 py-2 text-secondary">{row.dateOfBirth ? formatDateOfBirth(row.dateOfBirth) : "—"}</td>
-                    <td className="px-4 py-2 text-secondary">{row.coinBalance}</td>
-                    <td className="px-4 py-2 text-secondary">{row.consent}</td>
-                    <td className="px-4 py-2">
-                      <Badge tone={ROW_STATUS_TONE[row.rowStatus]}>{row.rowStatus}</Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {duplicateNames && duplicateNames.length > 0 && (
+            <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+              <p className="text-xs font-semibold text-warning">Duplicates (already exist, skipped)</p>
+              <p className="mt-1 text-sm text-primary">{duplicateNames.join(", ")}</p>
+            </div>
+          )}
+
+          {invalidNames && invalidNames.length > 0 && (
+            <div className="rounded-lg border border-danger/30 bg-danger/10 p-3">
+              <p className="text-xs font-semibold text-danger">Invalid (missing or bad name/phone)</p>
+              <p className="mt-1 text-sm text-primary">{invalidNames.join(", ")}</p>
+            </div>
+          )}
         </div>
       )}
     </Modal>

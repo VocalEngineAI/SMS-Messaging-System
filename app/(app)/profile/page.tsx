@@ -11,74 +11,73 @@ import { useToast } from "@/components/ui/Toast";
 export default function ProfilePage() {
   const { showToast } = useToast();
 
+  const [originalEmail, setOriginalEmail] = useState("");
   const [email, setEmail] = useState("");
   const [isLoadingAdmin, setIsLoadingAdmin] = useState(true);
-  const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin-user")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
-      .then((data) => setEmail(data.email))
+      .then((data) => {
+        setEmail(data.email);
+        setOriginalEmail(data.email);
+      })
       .catch(() => showToast("Failed to load profile.", "error"))
       .finally(() => setIsLoadingAdmin(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSavingEmail(true);
-    try {
-      const response = await fetch("/api/admin-user", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok) {
-        showToast(data?.error ?? "Failed to update email.", "error");
-        return;
-      }
-      showToast("Email updated successfully.", "success");
-    } catch {
-      showToast("Failed to update email.", "error");
-    } finally {
-      setIsSavingEmail(false);
-    }
-  }
-
-  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (newPassword !== confirmPassword) {
+    const wantsPasswordChange = Boolean(newPassword || confirmPassword || currentPassword);
+    if (wantsPasswordChange && newPassword !== confirmPassword) {
       showToast("New passwords do not match.", "error");
       return;
     }
 
-    setIsSavingPassword(true);
+    setIsSaving(true);
     try {
-      const response = await fetch("/api/admin-user/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok) {
-        showToast(data?.error ?? "Failed to update password.", "error");
-        return;
+      if (email !== originalEmail) {
+        const response = await fetch("/api/admin-user", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+          showToast(data?.error ?? "Failed to update email.", "error");
+          return;
+        }
+        setOriginalEmail(email);
       }
-      showToast("Password updated successfully.", "success");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+
+      if (wantsPasswordChange) {
+        const response = await fetch("/api/admin-user/change-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currentPassword, newPassword }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+          showToast(data?.error ?? "Failed to update password.", "error");
+          return;
+        }
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+
+      showToast("Profile updated successfully.", "success");
     } catch {
-      showToast("Failed to update password.", "error");
+      showToast("Failed to update profile.", "error");
     } finally {
-      setIsSavingPassword(false);
+      setIsSaving(false);
     }
   }
 
@@ -86,71 +85,54 @@ export default function ProfilePage() {
     <div>
       <PageHeader title="Profile" description="Manage your login email and password." />
 
-      <div className="flex flex-col gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Email</CardTitle>
-            <CardDescription>The email you sign in with.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="flex flex-col gap-4" onSubmit={handleEmailSubmit}>
-              <Input
-                label="Email"
-                type="email"
-                icon={<Mail size={16} />}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                disabled={isLoadingAdmin}
-                required
-              />
-              <Button type="submit" className="self-start" isLoading={isSavingEmail} disabled={isLoadingAdmin}>
-                Save Email
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Password</CardTitle>
-            <CardDescription>Choose a new password for your account.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="flex flex-col gap-4" onSubmit={handlePasswordSubmit}>
-              <Input
-                label="Current password"
-                type="password"
-                icon={<Lock size={16} />}
-                autoComplete="current-password"
-                value={currentPassword}
-                onChange={(event) => setCurrentPassword(event.target.value)}
-                required
-              />
-              <Input
-                label="New password"
-                type="password"
-                icon={<Lock size={16} />}
-                autoComplete="new-password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                required
-              />
-              <Input
-                label="Confirm new password"
-                type="password"
-                icon={<Lock size={16} />}
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                required
-              />
-              <Button type="submit" className="self-start" isLoading={isSavingPassword}>
-                Update Password
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+          <CardDescription>Update your email and/or password.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-4">
+          <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+            <Input
+              label="Email"
+              type="email"
+              icon={<Mail size={16} />}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={isLoadingAdmin}
+              required
+            />
+            <Input
+              label="Current password"
+              type="password"
+              icon={<Lock size={16} />}
+              autoComplete="current-password"
+              placeholder="Required to change password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+            />
+            <Input
+              label="New password"
+              type="password"
+              icon={<Lock size={16} />}
+              autoComplete="new-password"
+              placeholder="Leave blank to keep current password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+            />
+            <Input
+              label="Confirm new password"
+              type="password"
+              icon={<Lock size={16} />}
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+            />
+            <Button type="submit" size="sm" className="self-end" isLoading={isSaving} disabled={isLoadingAdmin}>
+              Save Changes
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
