@@ -88,7 +88,6 @@ export default function ProfilePage() {
       <Card className="max-w-md">
         <CardHeader>
           <CardTitle>Account</CardTitle>
-          <CardDescription>Update your email and/or password.</CardDescription>
         </CardHeader>
         <CardContent className="p-4">
           <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
