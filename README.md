@@ -45,7 +45,7 @@ step 3.
 
 - `/login` — email/password sign-in (`app/api/auth/login`)
 - `/contacts` — contacts table, search, CSV import with preview, delete
-- `/send` — recipient picker (searchable, filterable by consent status), message composer, send
+- `/send` — recipient picker (searchable), message composer, send
 
 ## Backend
 
@@ -66,7 +66,7 @@ no session cookie redirects to `/login`.
 
 Schema lives in `prisma/schema.prisma`:
 - `AdminUser` / `Session` — login + session auth
-- `Contact` — name, phone (unique), email, birthday, coin balance, consent status
+- `Contact` — name, phone (unique), email, date of birth, coin balance
 - `SmsMessage` — an audit log of every send attempt (recipient, body, status, Twilio SID or error),
   kept even if the contact is later deleted
 

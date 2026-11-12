@@ -1,4 +1,4 @@
-import type { Contact, ConsentStatus } from "@/types/contact";
+import type { Contact } from "@/types/contact";
 
 export type ParsedCsvRow = {
   name: string;
@@ -6,7 +6,6 @@ export type ParsedCsvRow = {
   email: string;
   dateOfBirth: string;
   coinBalance: number;
-  consent: ConsentStatus;
   rowStatus: "valid" | "duplicate" | "invalid";
 };
 
@@ -19,18 +18,6 @@ export type CsvImportResult = {
 };
 
 const PHONE_PATTERN = /^[+()\d][\d\s().-]{6,}$/;
-
-// Accepted spellings per consent value, matched case-insensitively (see
-// parseConsent below). Blank or anything else defaults to "Opted Out".
-const OPTED_IN_VALUES = ["opted in", "yes", "y", "1", "true"];
-const OPTED_OUT_VALUES = ["opted out", "no", "n", "0", "false"];
-
-function parseConsent(raw: string): ConsentStatus {
-  const value = raw.trim().toLowerCase();
-  if (OPTED_IN_VALUES.includes(value)) return "Opted In";
-  if (OPTED_OUT_VALUES.includes(value)) return "Opted Out";
-  return "Opted Out";
-}
 
 function toIsoDate(year: number, month: number, day: number): string | null {
   if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
@@ -85,7 +72,7 @@ function parseFlexibleDate(raw: string): string | null {
   return toIsoDate(parsed.getFullYear(), parsed.getMonth() + 1, parsed.getDate());
 }
 
-type Field = "name" | "phone" | "email" | "dateOfBirth" | "coinBalance" | "consent";
+type Field = "name" | "phone" | "email" | "dateOfBirth" | "coinBalance";
 
 // Accepted header spellings per field, matched case-insensitively with
 // spaces/underscores/hyphens stripped (so "Date of Birth", "date_of_birth"
@@ -99,7 +86,6 @@ const FIELD_ALIASES: Record<Field, string[]> = {
   email: ["email", "emailaddress"],
   dateOfBirth: ["dateofbirth", "dob", "birthday"],
   coinBalance: ["coinbalance", "coins", "balance"],
-  consent: ["consent", "consentstatus"],
 };
 
 // Checked only when the header has no direct "name" column (see
@@ -108,7 +94,7 @@ const FIELD_ALIASES: Record<Field, string[]> = {
 const FIRST_NAME_ALIASES = ["firstname", "fname", "givenname"];
 const LAST_NAME_ALIASES = ["lastname", "lname", "surname", "familyname"];
 
-const FIELD_ORDER: Field[] = ["name", "phone", "email", "dateOfBirth", "coinBalance", "consent"];
+const FIELD_ORDER: Field[] = ["name", "phone", "email", "dateOfBirth", "coinBalance"];
 
 function normalizeHeader(value: string): string {
   return value.toLowerCase().replace(/[\s_-]/g, "");
@@ -179,14 +165,12 @@ export function parseContactsCsv(csvText: string, existingContacts: Contact[]): 
     const dateOfBirthRaw = columns[columnIndexes.dateOfBirth] ?? "";
     const dateOfBirth = parseFlexibleDate(dateOfBirthRaw) ?? "";
     const coinBalanceRaw = columns[columnIndexes.coinBalance] ?? "";
-    const consentRaw = columns[columnIndexes.consent] ?? "";
 
     const normalizedPhone = normalizePhone(phone);
     const coinBalance = Number(coinBalanceRaw) || 0;
-    const consent = parseConsent(consentRaw);
 
-    // Only name and phone are required — email, date of birth, coin balance,
-    // and consent are all allowed to be blank (or, for date of birth,
+    // Only name and phone are required — email, date of birth, and coin
+    // balance are all allowed to be blank (or, for date of birth,
     // unparseable — it's just dropped rather than blocking the row).
     let rowStatus: ParsedCsvRow["rowStatus"] = "valid";
     if (!name || !phone || !PHONE_PATTERN.test(phone)) {
@@ -196,7 +180,7 @@ export function parseContactsCsv(csvText: string, existingContacts: Contact[]): 
     }
 
     seenPhones.add(normalizedPhone);
-    rows.push({ name, phone, email, dateOfBirth, coinBalance, consent, rowStatus });
+    rows.push({ name, phone, email, dateOfBirth, coinBalance, rowStatus });
   }
 
   const importedCount = rows.filter((r) => r.rowStatus === "valid").length;

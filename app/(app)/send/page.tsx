@@ -8,26 +8,16 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { Badge } from "@/components/ui/Badge";
-import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import type { Contact, ConsentStatus } from "@/types/contact";
+import type { Contact } from "@/types/contact";
 
 const SMS_SEGMENT_LENGTH = 160;
-
-const CONSENT_TONE: Record<ConsentStatus, "success" | "warning" | "danger"> = {
-  "Opted In": "success",
-  "Opted Out": "danger",
-};
-
-const CONSENT_FILTER_OPTIONS: Array<ConsentStatus | "All"> = ["All", "Opted In", "Opted Out"];
 
 export default function SendSmsPage() {
   const { showToast } = useToast();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [search, setSearch] = useState("");
-  const [consentFilter, setConsentFilter] = useState<ConsentStatus | "All">("All");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -43,16 +33,14 @@ export default function SendSmsPage() {
 
   const filteredContacts = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return contacts.filter((contact) => {
-      const matchesQuery =
-        !query ||
+    if (!query) return contacts;
+    return contacts.filter(
+      (contact) =>
         contact.name.toLowerCase().includes(query) ||
         contact.phone.toLowerCase().includes(query) ||
-        contact.email.toLowerCase().includes(query);
-      const matchesConsent = consentFilter === "All" || contact.consent === consentFilter;
-      return matchesQuery && matchesConsent;
-    });
-  }, [search, consentFilter]);
+        contact.email.toLowerCase().includes(query),
+    );
+  }, [contacts, search]);
 
   const allFilteredSelected = filteredContacts.length > 0 && filteredContacts.every((c) => selectedIds.has(c.id));
   const recipientCount = selectedIds.size;
@@ -120,28 +108,12 @@ export default function SendSmsPage() {
             <CardTitle>Select Recipients</CardTitle>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col gap-3 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="min-w-[160px] flex-1">
-                <Input
-                  placeholder="Search contacts..."
-                  icon={<Search size={16} />}
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </div>
-              <Select
-                value={consentFilter}
-                onChange={(event) => setConsentFilter(event.target.value as ConsentStatus | "All")}
-                className="sm:w-44"
-                aria-label="Filter by consent status"
-              >
-                {CONSENT_FILTER_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option === "All" ? "Consent Status" : option}
-                  </option>
-                ))}
-              </Select>
-            </div>
+            <Input
+              placeholder="Search contacts..."
+              icon={<Search size={16} />}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
 
             <label className="flex shrink-0 items-center gap-2.5 rounded-lg bg-app px-3.5 py-2.5 text-sm font-medium text-primary">
               <Checkbox checked={allFilteredSelected} onChange={toggleSelectAllFiltered} />
@@ -161,7 +133,6 @@ export default function SendSmsPage() {
                       {contact.phone} · {contact.email}
                     </p>
                   </div>
-                  <Badge tone={CONSENT_TONE[contact.consent]}>{contact.consent}</Badge>
                 </label>
               ))}
               {filteredContacts.length === 0 && (

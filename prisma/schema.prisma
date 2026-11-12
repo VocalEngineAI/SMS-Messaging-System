@@ -42,10 +42,6 @@ model Contact {
   email       String
   dateOfBirth DateTime? @db.Date
   coinBalance Int       @default(0)
-  // Stored as a MySQL TINYINT(1) (0/1) rather than an enum, per project
-  // preference — true means Opted In, false means Opted Out. See
-  // lib/contact-mapper.ts for the boolean <-> "Opted In"/"Opted Out" mapping.
-  consent     Boolean   @default(false)
   // Set on rows created via POST /api/contacts/import, to a value shared by
   // every row from that one CSV upload — lets "Undo last import" delete
   // exactly that batch. Null for contacts created any other way.

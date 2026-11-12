@@ -1,9 +1,9 @@
-name,phone,email,dateOfBirth,coinBalance,consent
-Grace Kelly,,grace.kelly@example.com,14/05/1991,80,Opted In
-Daniel Wu,+1 (650) 555-0144,daniel.wu@example.com,02/09/1988,120,Opted Out
-Priya Shah,+1 (510) 555-0298,priya.shah@example.com,,200,Opted In
-Marcus Allen,+1 (925) 555-0167,marcus.allen@example.com,10/02/1983,0,Opted Out
-Chloe Dubois,+1 (408) 555-0133,chloe.dubois@example.com,,340,Opted In
-Tariq Nasser,+1 (707) 555-0182,,30/11/1990,55,Opted In
-Hannah Kim,+1 (831) 555-0145,hannah.kim@example.com,25/04/1987,15,Opted Out
-Luis Ortega,+1 (669) 555-0176,luis.ortega@example.com,08/08/1992,275,Opted In
+name,phone,email,dateOfBirth,coinBalance
+Grace Kelly,+1 (415) 555-0211,grace.kelly@example.com,1991-05-14,80
+Daniel Wu,+1 (650) 555-0144,daniel.wu@example.com,1988-09-02,120
+Priya Shah,+1 (510) 555-0298,priya.shah@example.com,1994-12-21,200
+Marcus Allen,+1 (925) 555-0167,marcus.allen@example.com,1983-02-10,0
+Chloe Dubois,+1 (408) 555-0133,chloe.dubois@example.com,1996-07-19,340
+Tariq Nasser,+1 (707) 555-0182,tariq.nasser@example.com,1990-11-30,55
+Hannah Kim,+1 (831) 555-0145,hannah.kim@example.com,1987-04-25,15
+Luis Ortega,+1 (669) 555-0176,luis.ortega@example.com,1992-08-08,275

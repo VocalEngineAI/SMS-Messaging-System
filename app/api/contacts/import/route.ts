@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionAdmin } from "@/lib/session";
 import { parseContactsCsv } from "@/lib/csv";
-import { toContactView, toConsentDbValue } from "@/lib/contact-mapper";
+import { toContactView } from "@/lib/contact-mapper";
 
 // Re-parses and re-validates the raw CSV text server-side against the
 // current DB state — the browser's preview (ImportCsvModal) is UX only and
@@ -31,7 +31,6 @@ export async function POST(request: Request) {
       email: row.email,
       dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
       coinBalance: row.coinBalance,
-      consent: toConsentDbValue(row.consent),
       importBatchId,
     })),
     skipDuplicates: true,

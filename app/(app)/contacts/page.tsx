@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Trash2, Undo2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -12,12 +11,7 @@ import { ImportCsvModal } from "@/components/contacts/ImportCsvModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 import { formatDateOfBirth } from "@/lib/date";
-import type { Contact, ConsentStatus } from "@/types/contact";
-
-const CONSENT_TONE: Record<ConsentStatus, "success" | "warning" | "danger"> = {
-  "Opted In": "success",
-  "Opted Out": "danger",
-};
+import type { Contact } from "@/types/contact";
 
 const PAGE_SIZE = 50;
 
@@ -169,7 +163,6 @@ export default function ContactsPage() {
                 <th className="px-5 py-3 font-medium">Email</th>
                 <th className="px-5 py-3 font-medium">Date of Birth</th>
                 <th className="px-5 py-3 font-medium">Coin Balance</th>
-                <th className="px-5 py-3 font-medium">Consent Status</th>
                 <th className="px-5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
@@ -182,9 +175,6 @@ export default function ContactsPage() {
                   <td className="px-5 py-3 text-secondary">{contact.email}</td>
                   <td className="px-5 py-3 text-secondary">{formatDateOfBirth(contact.dateOfBirth)}</td>
                   <td className="px-5 py-3 text-secondary">{contact.coinBalance}</td>
-                  <td className="px-5 py-3">
-                    <Badge tone={CONSENT_TONE[contact.consent]}>{contact.consent}</Badge>
-                  </td>
                   <td className="px-5 py-3 text-right">
                     <Button
                       variant="ghost"
@@ -200,14 +190,14 @@ export default function ContactsPage() {
               ))}
               {!isLoading && filteredContacts.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-5 py-10 text-center text-secondary">
+                  <td colSpan={7} className="px-5 py-10 text-center text-secondary">
                     No contacts match your search.
                   </td>
                 </tr>
               )}
               {isLoading && (
                 <tr>
-                  <td colSpan={8} className="px-5 py-10 text-center text-secondary">
+                  <td colSpan={7} className="px-5 py-10 text-center text-secondary">
                     Loading contacts…
                   </td>
                 </tr>
