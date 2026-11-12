@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       name: row.name,
       phone: row.phone,
       email: row.email,
-      dateOfBirth: new Date(row.dateOfBirth || Date.now()),
+      dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
       coinBalance: row.coinBalance,
       consent: toConsentDbValue(row.consent),
       importBatchId,

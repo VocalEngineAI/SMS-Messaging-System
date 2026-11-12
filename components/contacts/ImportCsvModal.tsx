@@ -58,7 +58,7 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
       isOpen={isOpen}
       onClose={handleClose}
       title="Import Contacts"
-      description="Upload a CSV file with a header row naming: name, phone, email, date of birth, coins, consent (any column order)."
+      description="Upload a CSV file with a header row naming: name, phone, email, date of birth, coins, consent (any column order). Only name and phone are required."
       widthClassName="max-w-3xl"
       footer={
         result && (
@@ -87,7 +87,8 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
           <div>
             <p className="text-sm font-semibold text-primary">Drag and drop a CSV file, or browse</p>
             <p className="mt-1 text-xs text-secondary">
-              Header row columns (any order): name (or first/last name), phone, email, date of birth, coins, consent
+              Header row columns (any order): name (or first/last name), phone, email, date of birth, coins, consent.
+              Only name and phone are required — consent accepts Opted In/Out, Yes/No, or 1/0.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">

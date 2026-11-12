@@ -28,16 +28,18 @@ export async function POST(request: Request) {
   if (typeof phone !== "string" || !isValidPhone(phone)) {
     return NextResponse.json({ error: "A valid phone number is required." }, { status: 400 });
   }
-  if (typeof email !== "string" || !isValidEmail(email)) {
-    return NextResponse.json({ error: "A valid email is required." }, { status: 400 });
+  // Only name and phone are required — email, date of birth, coin balance,
+  // and consent are all optional and fall back to sensible defaults below.
+  if (email !== undefined && email !== "" && (typeof email !== "string" || !isValidEmail(email))) {
+    return NextResponse.json({ error: "Enter a valid email, or leave it blank." }, { status: 400 });
   }
-  if (typeof dateOfBirth !== "string" || Number.isNaN(Date.parse(dateOfBirth))) {
-    return NextResponse.json({ error: "A valid date of birth is required." }, { status: 400 });
+  if (dateOfBirth !== undefined && dateOfBirth !== "" && (typeof dateOfBirth !== "string" || Number.isNaN(Date.parse(dateOfBirth)))) {
+    return NextResponse.json({ error: "Enter a valid date of birth, or leave it blank." }, { status: 400 });
   }
-  if (typeof coinBalance !== "number" || coinBalance < 0) {
+  if (coinBalance !== undefined && (typeof coinBalance !== "number" || coinBalance < 0)) {
     return NextResponse.json({ error: "Coin balance must be a non-negative number." }, { status: 400 });
   }
-  if (typeof consent !== "string" || !CONSENT_VALUES.includes(consent as ConsentStatus)) {
+  if (consent !== undefined && !CONSENT_VALUES.includes(consent as ConsentStatus)) {
     return NextResponse.json({ error: "Consent status must be 'Opted In' or 'Opted Out'." }, { status: 400 });
   }
 
@@ -50,10 +52,10 @@ export async function POST(request: Request) {
     data: {
       name: name.trim(),
       phone,
-      email,
-      dateOfBirth: new Date(dateOfBirth),
-      coinBalance,
-      consent: toConsentDbValue(consent as ConsentStatus),
+      email: email || "",
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      coinBalance: coinBalance ?? 0,
+      consent: toConsentDbValue((consent as ConsentStatus) ?? "Opted Out"),
     },
   });
 

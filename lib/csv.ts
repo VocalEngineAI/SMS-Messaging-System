@@ -19,7 +19,71 @@ export type CsvImportResult = {
 };
 
 const PHONE_PATTERN = /^[+()\d][\d\s().-]{6,}$/;
-const CONSENT_VALUES: ConsentStatus[] = ["Opted In", "Opted Out"];
+
+// Accepted spellings per consent value, matched case-insensitively (see
+// parseConsent below). Blank or anything else defaults to "Opted Out".
+const OPTED_IN_VALUES = ["opted in", "yes", "y", "1", "true"];
+const OPTED_OUT_VALUES = ["opted out", "no", "n", "0", "false"];
+
+function parseConsent(raw: string): ConsentStatus {
+  const value = raw.trim().toLowerCase();
+  if (OPTED_IN_VALUES.includes(value)) return "Opted In";
+  if (OPTED_OUT_VALUES.includes(value)) return "Opted Out";
+  return "Opted Out";
+}
+
+function toIsoDate(year: number, month: number, day: number): string | null {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  if (year < 1000 || year > 9999) return null;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+// Accepts whatever date-of-birth format a given CSV happens to use and
+// normalizes it to "YYYY-MM-DD", or returns null if it's unparseable.
+// Handles, in order:
+//  - ISO date or timestamp ("1991-05-14", "1991-05-14T00:00:00Z") — read
+//    directly off the string so a time/timezone suffix never shifts the date.
+//  - "YYYY/MM/DD"
+//  - Ambiguous numeric "D/M/Y" or "M/D/Y" (either "-" or "/"): if one segment
+//    is >12 it must be the day, resolving the order; if both are <=12 (truly
+//    ambiguous, e.g. "02/09/1988") this app defaults to day-first (D/M/Y),
+//    matching the DD-MM-YYYY format used elsewhere in the UI.
+//  - Anything else ("May 14, 1991", "14 May 1991", full JS-parsable strings)
+//    via the native Date parser, reading the result back with local getters
+//    (consistent with how the engine itself interpreted the local-time string).
+function parseFlexibleDate(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (isoMatch) {
+    const [, y, mo, d] = isoMatch;
+    return toIsoDate(Number(y), Number(mo), Number(d));
+  }
+
+  const yearFirstSlash = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(value);
+  if (yearFirstSlash) {
+    const [, y, mo, d] = yearFirstSlash;
+    return toIsoDate(Number(y), Number(mo), Number(d));
+  }
+
+  const yearLast = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(value);
+  if (yearLast) {
+    const [, a, b, y] = yearLast;
+    const first = Number(a);
+    const second = Number(b);
+    const year = Number(y);
+    if (first > 12 && second <= 12) return toIsoDate(year, second, first);
+    if (second > 12 && first <= 12) return toIsoDate(year, first, second);
+    if (first <= 12 && second <= 12) return toIsoDate(year, second, first); // ambiguous — assume day-first
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return toIsoDate(parsed.getFullYear(), parsed.getMonth() + 1, parsed.getDate());
+}
 
 type Field = "name" | "phone" | "email" | "dateOfBirth" | "coinBalance" | "consent";
 
@@ -112,15 +176,18 @@ export function parseContactsCsv(csvText: string, existingContacts: Contact[]): 
         : [columns[columnIndexes.firstName], columns[columnIndexes.lastName]].filter(Boolean).join(" ");
     const phone = columns[columnIndexes.phone] ?? "";
     const email = columns[columnIndexes.email] ?? "";
-    const dateOfBirth = columns[columnIndexes.dateOfBirth] ?? "";
+    const dateOfBirthRaw = columns[columnIndexes.dateOfBirth] ?? "";
+    const dateOfBirth = parseFlexibleDate(dateOfBirthRaw) ?? "";
     const coinBalanceRaw = columns[columnIndexes.coinBalance] ?? "";
     const consentRaw = columns[columnIndexes.consent] ?? "";
 
     const normalizedPhone = normalizePhone(phone);
     const coinBalance = Number(coinBalanceRaw) || 0;
-    const consent = (CONSENT_VALUES.find((value) => value.toLowerCase() === consentRaw.toLowerCase()) ??
-      "Opted Out") as ConsentStatus;
+    const consent = parseConsent(consentRaw);
 
+    // Only name and phone are required — email, date of birth, coin balance,
+    // and consent are all allowed to be blank (or, for date of birth,
+    // unparseable — it's just dropped rather than blocking the row).
     let rowStatus: ParsedCsvRow["rowStatus"] = "valid";
     if (!name || !phone || !PHONE_PATTERN.test(phone)) {
       rowStatus = "invalid";

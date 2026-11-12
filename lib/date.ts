@@ -1,7 +1,9 @@
 // Contacts store date of birth as "YYYY-MM-DD" (ISO); this renders that as
-// "DD-MM-YYYY" for display. Falls back to the raw string if it doesn't
-// match the expected shape (e.g. an empty or malformed CSV value).
+// "DD-MM-YYYY" for display. Date of birth is optional, so an empty string
+// (no value) renders as "—"; anything else that doesn't match the expected
+// shape falls back to the raw string.
 export function formatDateOfBirth(dateOfBirth: string): string {
+  if (!dateOfBirth) return "—";
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth);
   if (!match) return dateOfBirth;
   const [, year, month, day] = match;

@@ -1,18 +1,10 @@
-import type { Contact as PrismaContact, ConsentStatus as PrismaConsentStatus } from "@prisma/client";
+import type { Contact as PrismaContact } from "@prisma/client";
 import type { Contact, ConsentStatus } from "@/types/contact";
 
-const CONSENT_TO_VIEW: Record<PrismaConsentStatus, ConsentStatus> = {
-  OPTED_IN: "Opted In",
-  OPTED_OUT: "Opted Out",
-};
-
-const CONSENT_TO_DB: Record<ConsentStatus, PrismaConsentStatus> = {
-  "Opted In": "OPTED_IN",
-  "Opted Out": "OPTED_OUT",
-};
-
-export function toConsentDbValue(consent: ConsentStatus): PrismaConsentStatus {
-  return CONSENT_TO_DB[consent];
+// Stored in the DB as a boolean (0/1) — see prisma/schema.prisma's
+// Contact.consent comment. true = Opted In, false = Opted Out.
+export function toConsentDbValue(consent: ConsentStatus): boolean {
+  return consent === "Opted In";
 }
 
 export function toContactView(contact: PrismaContact): Contact {
@@ -21,8 +13,8 @@ export function toContactView(contact: PrismaContact): Contact {
     name: contact.name,
     phone: contact.phone,
     email: contact.email,
-    dateOfBirth: contact.dateOfBirth.toISOString().slice(0, 10),
+    dateOfBirth: contact.dateOfBirth ? contact.dateOfBirth.toISOString().slice(0, 10) : "",
     coinBalance: contact.coinBalance,
-    consent: CONSENT_TO_VIEW[contact.consent],
+    consent: contact.consent ? "Opted In" : "Opted Out",
   };
 }
