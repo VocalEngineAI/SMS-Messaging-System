@@ -4,7 +4,7 @@ export type ParsedCsvRow = {
   name: string;
   phone: string;
   email: string;
-  birthday: string;
+  dateOfBirth: string;
   coinBalance: number;
   consent: ConsentStatus;
   rowStatus: "valid" | "duplicate" | "invalid";
@@ -22,7 +22,7 @@ const PHONE_PATTERN = /^[+()\d][\d\s().-]{6,}$/;
 const CONSENT_VALUES: ConsentStatus[] = ["Opted In", "Opted Out"];
 
 /*
- * Expects a simple "name,phone,email,birthday,coinBalance,consent" header
+ * Expects a simple "name,phone,email,dateOfBirth,coinBalance,consent" header
  * row followed by data rows. This is a frontend-only simulation — no file
  * is uploaded anywhere; it's parsed entirely in the browser so the import
  * preview has real rows to show instead of static placeholders.
@@ -41,7 +41,7 @@ export function parseContactsCsv(csvText: string, existingContacts: Contact[]): 
 
   for (const line of dataLines) {
     const columns = line.split(",").map((value) => value.trim());
-    const [name = "", phone = "", email = "", birthday = "", coinBalanceRaw = "", consentRaw = ""] = columns;
+    const [name = "", phone = "", email = "", dateOfBirth = "", coinBalanceRaw = "", consentRaw = ""] = columns;
     const normalizedPhone = normalizePhone(phone);
     const coinBalance = Number(coinBalanceRaw) || 0;
     const consent = (CONSENT_VALUES.find((value) => value.toLowerCase() === consentRaw.toLowerCase()) ??
@@ -55,7 +55,7 @@ export function parseContactsCsv(csvText: string, existingContacts: Contact[]): 
     }
 
     seenPhones.add(normalizedPhone);
-    rows.push({ name, phone, email, birthday, coinBalance, consent, rowStatus });
+    rows.push({ name, phone, email, dateOfBirth, coinBalance, consent, rowStatus });
   }
 
   const importedCount = rows.filter((r) => r.rowStatus === "valid").length;

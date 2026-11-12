@@ -45,13 +45,19 @@ model Contact {
   name        String
   phone       String        @unique
   email       String
-  birthday    DateTime      @db.Date
+  dateOfBirth DateTime      @db.Date
   coinBalance Int           @default(0)
   consent     ConsentStatus @default(OPTED_OUT)
+  // Set on rows created via POST /api/contacts/import, to a value shared by
+  // every row from that one CSV upload — lets "Undo last import" delete
+  // exactly that batch. Null for contacts created any other way.
+  importBatchId String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   smsMessages SmsMessage[]
+
+  @@index([importBatchId])
 }
 
 enum SmsStatus {

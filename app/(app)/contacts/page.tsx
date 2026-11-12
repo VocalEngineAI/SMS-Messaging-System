@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Trash2, Upload } from "lucide-react";
+import { Search, Trash2, Undo2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ImportCsvModal } from "@/components/contacts/ImportCsvModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
-import { formatBirthday } from "@/lib/date";
+import { formatDateOfBirth } from "@/lib/date";
 import type { Contact, ConsentStatus } from "@/types/contact";
 
 const CONSENT_TONE: Record<ConsentStatus, "success" | "warning" | "danger"> = {
@@ -29,6 +29,9 @@ export default function ContactsPage() {
   const [page, setPage] = useState(1);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
+  const [lastImportBatchId, setLastImportBatchId] = useState<string | null>(null);
+  const [isUndoConfirmOpen, setIsUndoConfirmOpen] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
 
   async function loadContacts() {
     setIsLoading(true);
@@ -83,12 +86,31 @@ export default function ContactsPage() {
       await loadContacts();
       setPage(1);
       if (data.importedCount > 0) {
+        setLastImportBatchId(data.importBatchId ?? null);
         showToast(`Imported ${data.importedCount} contact${data.importedCount === 1 ? "" : "s"} successfully.`, "success");
       } else {
         showToast("No valid contacts were found to import.", "error");
       }
     } catch {
       showToast("Import failed. Please try again.", "error");
+    }
+  }
+
+  async function handleUndoLastImport() {
+    if (!lastImportBatchId) return;
+    setIsUndoConfirmOpen(false);
+    setIsUndoing(true);
+    try {
+      const response = await fetch(`/api/contacts/import/${lastImportBatchId}`, { method: "DELETE" });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error();
+      await loadContacts();
+      setLastImportBatchId(null);
+      showToast(`Removed ${data.deletedCount} contact${data.deletedCount === 1 ? "" : "s"} from the last import.`, "success");
+    } catch {
+      showToast("Failed to undo the last import.", "error");
+    } finally {
+      setIsUndoing(false);
     }
   }
 
@@ -112,10 +134,18 @@ export default function ContactsPage() {
         title="Contacts"
         description="Manage your imported customer contact lists."
         action={
-          <Button onClick={() => setIsImportOpen(true)}>
-            <Upload size={16} />
-            Import CSV
-          </Button>
+          <div className="flex gap-2">
+            {lastImportBatchId && (
+              <Button variant="outline" onClick={() => setIsUndoConfirmOpen(true)}>
+                <Undo2 size={16} />
+                Undo Last Import
+              </Button>
+            )}
+            <Button onClick={() => setIsImportOpen(true)}>
+              <Upload size={16} />
+              Import CSV
+            </Button>
+          </div>
         }
       />
 
@@ -137,7 +167,7 @@ export default function ContactsPage() {
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Phone Number</th>
                 <th className="px-5 py-3 font-medium">Email</th>
-                <th className="px-5 py-3 font-medium">Birthday</th>
+                <th className="px-5 py-3 font-medium">Date of Birth</th>
                 <th className="px-5 py-3 font-medium">Coin Balance</th>
                 <th className="px-5 py-3 font-medium">Consent Status</th>
                 <th className="px-5 py-3 text-right font-medium">Actions</th>
@@ -150,7 +180,7 @@ export default function ContactsPage() {
                   <td className="px-5 py-3 font-medium text-primary">{contact.name}</td>
                   <td className="px-5 py-3 text-secondary">{contact.phone}</td>
                   <td className="px-5 py-3 text-secondary">{contact.email}</td>
-                  <td className="px-5 py-3 text-secondary">{formatBirthday(contact.birthday)}</td>
+                  <td className="px-5 py-3 text-secondary">{formatDateOfBirth(contact.dateOfBirth)}</td>
                   <td className="px-5 py-3 text-secondary">{contact.coinBalance}</td>
                   <td className="px-5 py-3">
                     <Badge tone={CONSENT_TONE[contact.consent]}>{contact.consent}</Badge>
@@ -204,6 +234,18 @@ export default function ContactsPage() {
           destructive
           onConfirm={handleConfirmDelete}
           onCancel={() => setContactToDelete(null)}
+        />
+      )}
+
+      {isUndoConfirmOpen && (
+        <ConfirmDialog
+          title="Undo last import"
+          description="This will delete every contact created by the most recent CSV import. This cannot be undone."
+          confirmLabel="Undo Import"
+          isLoading={isUndoing}
+          destructive
+          onConfirm={handleUndoLastImport}
+          onCancel={() => setIsUndoConfirmOpen(false)}
         />
       )}
     </div>

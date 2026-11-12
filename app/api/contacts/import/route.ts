@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionAdmin } from "@/lib/session";
@@ -21,14 +22,17 @@ export async function POST(request: Request) {
   const result = parseContactsCsv(csvText, existingContacts.map(toContactView));
   const validRows = result.rows.filter((row) => row.rowStatus === "valid");
 
+  const importBatchId = randomUUID();
+
   const created = await prisma.contact.createMany({
     data: validRows.map((row) => ({
       name: row.name,
       phone: row.phone,
       email: row.email,
-      birthday: new Date(row.birthday || Date.now()),
+      dateOfBirth: new Date(row.dateOfBirth || Date.now()),
       coinBalance: row.coinBalance,
       consent: toConsentDbValue(row.consent),
+      importBatchId,
     })),
     skipDuplicates: true,
   });
@@ -38,5 +42,6 @@ export async function POST(request: Request) {
     duplicateCount: result.duplicateCount,
     invalidCount: result.invalidCount,
     totalRows: result.totalRows,
+    importBatchId: created.count > 0 ? importBatchId : null,
   });
 }

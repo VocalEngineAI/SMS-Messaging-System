@@ -21,7 +21,7 @@ export function toContactView(contact: PrismaContact): Contact {
     name: contact.name,
     phone: contact.phone,
     email: contact.email,
-    birthday: contact.birthday.toISOString().slice(0, 10),
+    dateOfBirth: contact.dateOfBirth.toISOString().slice(0, 10),
     coinBalance: contact.coinBalance,
     consent: CONSENT_TO_VIEW[contact.consent],
   };

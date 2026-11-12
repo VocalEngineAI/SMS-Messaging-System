@@ -5,7 +5,7 @@ export type Contact = {
   name: string;
   phone: string;
   email: string;
-  birthday: string;
+  dateOfBirth: string;
   coinBalance: number;
   consent: ConsentStatus;
 };

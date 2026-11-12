@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json().catch(() => null);
-  const { name, phone, email, birthday, coinBalance, consent } = body ?? {};
+  const { name, phone, email, dateOfBirth, coinBalance, consent } = body ?? {};
 
   if (typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "Name is required." }, { status: 400 });
@@ -31,8 +31,8 @@ export async function POST(request: Request) {
   if (typeof email !== "string" || !isValidEmail(email)) {
     return NextResponse.json({ error: "A valid email is required." }, { status: 400 });
   }
-  if (typeof birthday !== "string" || Number.isNaN(Date.parse(birthday))) {
-    return NextResponse.json({ error: "A valid birthday is required." }, { status: 400 });
+  if (typeof dateOfBirth !== "string" || Number.isNaN(Date.parse(dateOfBirth))) {
+    return NextResponse.json({ error: "A valid date of birth is required." }, { status: 400 });
   }
   if (typeof coinBalance !== "number" || coinBalance < 0) {
     return NextResponse.json({ error: "Coin balance must be a non-negative number." }, { status: 400 });
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       name: name.trim(),
       phone,
       email,
-      birthday: new Date(birthday),
+      dateOfBirth: new Date(dateOfBirth),
       coinBalance,
       consent: toConsentDbValue(consent as ConsentStatus),
     },

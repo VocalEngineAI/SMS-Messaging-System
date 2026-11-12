@@ -1,20 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileSpreadsheet, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { parseContactsCsv, type CsvImportResult, type ParsedCsvRow } from "@/lib/csv";
-import { formatBirthday } from "@/lib/date";
+import { formatDateOfBirth } from "@/lib/date";
 import type { Contact } from "@/types/contact";
-
-const SAMPLE_CSV = `name,phone,email,birthday,coinBalance,consent
-Grace Kelly,+1 (415) 555-0211,grace.kelly@example.com,1991-05-14,80,Opted In
-Daniel Wu,+1 (650) 555-0144,daniel.wu@example.com,1988-09-02,120,Opted Out
-Olivia Bennett,+1 (415) 555-0132,olivia.bennett@example.com,1990-03-14,120,Opted In
-not-a-phone,abc,invalid@example.com,1990-01-01,0,Opted Out
-Priya Shah,+1 (510) 555-0298,priya.shah@example.com,1994-12-21,200,Opted Out`;
 
 const ROW_STATUS_TONE: Record<ParsedCsvRow["rowStatus"], "success" | "warning" | "danger"> = {
   valid: "success",
@@ -70,7 +63,7 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
       isOpen={isOpen}
       onClose={handleClose}
       title="Import Contacts"
-      description="Upload a CSV file with columns: name, phone, email, birthday, coinBalance, consent."
+      description="Upload a CSV file with columns: name, phone, email, date of birth, coinBalance, consent."
       widthClassName="max-w-3xl"
       footer={
         result && (
@@ -98,16 +91,12 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
           </span>
           <div>
             <p className="text-sm font-semibold text-primary">Drag and drop a CSV file, or browse</p>
-            <p className="mt-1 text-xs text-secondary">Expected columns: name, phone, email, birthday, coinBalance, consent</p>
+            <p className="mt-1 text-xs text-secondary">Expected columns: name, phone, email, date of birth, coinBalance, consent</p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button size="sm" onClick={() => fileInputRef.current?.click()}>
               <Upload size={16} />
               Browse File
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleParse(SAMPLE_CSV, "sample-contacts.csv")}>
-              <FileSpreadsheet size={16} />
-              Use sample CSV
             </Button>
           </div>
           <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
@@ -146,7 +135,7 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
                   <th className="px-4 py-2 font-medium">Name</th>
                   <th className="px-4 py-2 font-medium">Phone</th>
                   <th className="px-4 py-2 font-medium">Email</th>
-                  <th className="px-4 py-2 font-medium">Birthday</th>
+                  <th className="px-4 py-2 font-medium">Date of Birth</th>
                   <th className="px-4 py-2 font-medium">Coins</th>
                   <th className="px-4 py-2 font-medium">Consent</th>
                   <th className="px-4 py-2 font-medium">Status</th>
@@ -159,7 +148,7 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
                     <td className="px-4 py-2 text-primary">{row.name || "—"}</td>
                     <td className="px-4 py-2 text-secondary">{row.phone || "—"}</td>
                     <td className="px-4 py-2 text-secondary">{row.email || "—"}</td>
-                    <td className="px-4 py-2 text-secondary">{row.birthday ? formatBirthday(row.birthday) : "—"}</td>
+                    <td className="px-4 py-2 text-secondary">{row.dateOfBirth ? formatDateOfBirth(row.dateOfBirth) : "—"}</td>
                     <td className="px-4 py-2 text-secondary">{row.coinBalance}</td>
                     <td className="px-4 py-2 text-secondary">{row.consent}</td>
                     <td className="px-4 py-2">
