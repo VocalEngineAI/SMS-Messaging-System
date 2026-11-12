@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Trash2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -11,10 +11,8 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ImportCsvModal } from "@/components/contacts/ImportCsvModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
-import { DUMMY_CONTACTS } from "@/lib/dummy-data";
 import { formatBirthday } from "@/lib/date";
 import type { Contact, ConsentStatus } from "@/types/contact";
-import type { ParsedCsvRow } from "@/lib/csv";
 
 const CONSENT_TONE: Record<ConsentStatus, "success" | "warning" | "danger"> = {
   "Opted In": "success",
@@ -25,11 +23,30 @@ const PAGE_SIZE = 50;
 
 export default function ContactsPage() {
   const { showToast } = useToast();
-  const [contacts, setContacts] = useState<Contact[]>(DUMMY_CONTACTS);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
+
+  async function loadContacts() {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/contacts");
+      if (!response.ok) throw new Error("Failed to load contacts");
+      setContacts(await response.json());
+    } catch {
+      showToast("Failed to load contacts.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadContacts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredContacts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -51,32 +68,42 @@ export default function ContactsPage() {
     setPage(1);
   }
 
-  function handleImport(rows: ParsedCsvRow[]) {
-    const newContacts: Contact[] = rows
-      .filter((row) => row.rowStatus === "valid")
-      .map((row, index) => ({
-        id: `imported-${Date.now()}-${index}`,
-        name: row.name,
-        phone: row.phone,
-        email: row.email,
-        birthday: row.birthday,
-        coinBalance: row.coinBalance,
-        consent: row.consent,
-      }));
-    setContacts((current) => [...newContacts, ...current]);
-    setPage(1);
-    if (newContacts.length > 0) {
-      showToast(`Imported ${newContacts.length} contact${newContacts.length === 1 ? "" : "s"} successfully.`, "success");
-    } else {
-      showToast("No valid contacts were found to import.", "error");
+  async function handleImport(csvText: string) {
+    try {
+      const response = await fetch("/api/contacts/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csvText }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        showToast(data?.error ?? "Import failed.", "error");
+        return;
+      }
+      await loadContacts();
+      setPage(1);
+      if (data.importedCount > 0) {
+        showToast(`Imported ${data.importedCount} contact${data.importedCount === 1 ? "" : "s"} successfully.`, "success");
+      } else {
+        showToast("No valid contacts were found to import.", "error");
+      }
+    } catch {
+      showToast("Import failed. Please try again.", "error");
     }
   }
 
-  function handleConfirmDelete() {
+  async function handleConfirmDelete() {
     if (!contactToDelete) return;
-    setContacts((current) => current.filter((c) => c.id !== contactToDelete.id));
-    showToast(`Deleted ${contactToDelete.name}.`, "success");
+    const deleted = contactToDelete;
     setContactToDelete(null);
+    try {
+      const response = await fetch(`/api/contacts/${deleted.id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Delete failed");
+      setContacts((current) => current.filter((c) => c.id !== deleted.id));
+      showToast(`Deleted ${deleted.name}.`, "success");
+    } catch {
+      showToast(`Failed to delete ${deleted.name}.`, "error");
+    }
   }
 
   return (
@@ -141,10 +168,17 @@ export default function ContactsPage() {
                   </td>
                 </tr>
               ))}
-              {filteredContacts.length === 0 && (
+              {!isLoading && filteredContacts.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-5 py-10 text-center text-secondary">
                     No contacts match your search.
+                  </td>
+                </tr>
+              )}
+              {isLoading && (
+                <tr>
+                  <td colSpan={8} className="px-5 py-10 text-center text-secondary">
+                    Loading contacts…
                   </td>
                 </tr>
               )}

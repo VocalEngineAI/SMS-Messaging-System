@@ -15,13 +15,13 @@ export default function LoginPage() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  // Frontend-only placeholder: no real authentication, this just validates
-  // the fields are filled in and navigates to the contacts page. Wire this up
-  // to a real auth endpoint when the backend exists.
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const [formError, setFormError] = useState<string | null>(null);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setEmailError(null);
     setPasswordError(null);
+    setFormError(null);
 
     if (!email.trim()) {
       setEmailError("Email is required.");
@@ -33,9 +33,26 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        setFormError(data?.error ?? "Unable to sign in. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
       router.push("/contacts");
-    }, 500);
+      router.refresh();
+    } catch {
+      setFormError("Unable to reach the server. Please try again.");
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -49,6 +66,12 @@ export default function LoginPage() {
         <p className="mt-1 text-center text-sm text-secondary">Sign in to manage your SMS campaigns</p>
 
         <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+          {formError && (
+            <p className="rounded-lg border border-danger/30 bg-danger/10 px-3.5 py-2.5 text-sm text-danger">
+              {formError}
+            </p>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label htmlFor="login-email" className="text-sm font-semibold text-primary">
               Email

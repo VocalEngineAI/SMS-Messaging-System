@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Send } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -12,8 +12,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { DUMMY_CONTACTS } from "@/lib/dummy-data";
-import type { ConsentStatus } from "@/types/contact";
+import type { Contact, ConsentStatus } from "@/types/contact";
 
 const SMS_SEGMENT_LENGTH = 160;
 
@@ -26,6 +25,7 @@ const CONSENT_FILTER_OPTIONS: Array<ConsentStatus | "All"> = ["All", "Opted In",
 
 export default function SendSmsPage() {
   const { showToast } = useToast();
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [search, setSearch] = useState("");
   const [consentFilter, setConsentFilter] = useState<ConsentStatus | "All">("All");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -33,9 +33,17 @@ export default function SendSmsPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
+  useEffect(() => {
+    fetch("/api/contacts")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then(setContacts)
+      .catch(() => showToast("Failed to load contacts.", "error"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const filteredContacts = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return DUMMY_CONTACTS.filter((contact) => {
+    return contacts.filter((contact) => {
       const matchesQuery =
         !query ||
         contact.name.toLowerCase().includes(query) ||
@@ -72,15 +80,32 @@ export default function SendSmsPage() {
     });
   }
 
-  function handleConfirmSend() {
+  async function handleConfirmSend() {
     setIsConfirmOpen(false);
     setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
-      showToast("Message simulated to selected recipient(s) successfully.", "success");
+    try {
+      const response = await fetch("/api/sms/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactIds: Array.from(selectedIds), message }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        showToast(data?.error ?? "Failed to send messages.", "error");
+        return;
+      }
+      if (data.failedCount > 0) {
+        showToast(`Sent to ${data.sentCount} recipient(s); ${data.failedCount} failed.`, "error");
+      } else {
+        showToast(`Sent to ${data.sentCount} recipient(s) successfully.`, "success");
+      }
       setSelectedIds(new Set());
       setMessage("");
-    }, 1200);
+    } catch {
+      showToast("Failed to send messages. Please try again.", "error");
+    } finally {
+      setIsSending(false);
+    }
   }
 
   const canSend = recipientCount > 0 && message.trim().length > 0;

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ChevronDown, LogOut, Menu, Send, Users, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronDown, LogOut, Menu, Send, User, Users, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Logo } from "@/components/ui/Logo";
 
@@ -14,8 +14,15 @@ const NAV_ITEMS = [
 
 export function TopBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <header className="topbar-h relative flex shrink-0 items-center gap-3 border-b border-subtle bg-card px-4 sm:gap-6 sm:px-6 lg:px-8">
@@ -81,13 +88,23 @@ export function TopBar() {
                   <p className="truncate text-xs text-secondary">team@sparkr.com</p>
                 </div>
                 <Link
-                  href="/login"
+                  href="/profile"
+                  onClick={() => setIsUserMenuOpen(false)}
                   role="menuitem"
-                  className="mt-2 flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-sm font-semibold text-danger hover:bg-danger/10"
+                  className="mt-2 flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-sm font-semibold text-primary hover:bg-app"
+                >
+                  <User size={16} />
+                  Profile
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  role="menuitem"
+                  className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-sm font-semibold text-danger hover:bg-danger/10"
                 >
                   <LogOut size={16} />
                   Log out
-                </Link>
+                </button>
               </div>
             </>
           )}

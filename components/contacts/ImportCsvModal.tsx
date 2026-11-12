@@ -26,16 +26,19 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   existingContacts: Contact[];
-  onImport: (rows: ParsedCsvRow[]) => void;
+  onImport: (csvText: string) => Promise<void>;
 };
 
 export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [csvText, setCsvText] = useState<string | null>(null);
   const [result, setResult] = useState<CsvImportResult | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   function handleParse(text: string, name: string) {
     setFileName(name);
+    setCsvText(text);
     setResult(parseContactsCsv(text, existingContacts));
   }
 
@@ -49,13 +52,16 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
 
   function handleClose() {
     setFileName(null);
+    setCsvText(null);
     setResult(null);
     onClose();
   }
 
-  function handleConfirmImport() {
-    if (!result) return;
-    onImport(result.rows);
+  async function handleConfirmImport() {
+    if (!csvText) return;
+    setIsImporting(true);
+    await onImport(csvText);
+    setIsImporting(false);
     handleClose();
   }
 
@@ -75,7 +81,8 @@ export function ImportCsvModal({ isOpen, onClose, existingContacts, onImport }: 
             <Button
               size="sm"
               onClick={handleConfirmImport}
-              disabled={result.importedCount === 0}
+              disabled={result.importedCount === 0 || isImporting}
+              isLoading={isImporting}
               className="w-full sm:w-auto"
             >
               Confirm Import ({result.importedCount})

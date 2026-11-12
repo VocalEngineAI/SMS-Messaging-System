@@ -1,0 +1,79 @@
+generator client {
+  provider      = "prisma-client-js"
+  // Mirrors SparkrMedia-TemplateWebsite's binaryTargets: "native" for local
+  // dev (Windows) and CI typecheck, "debian-openssl-1.1.x" for the cPanel
+  // production host. Adjust if this app deploys somewhere else.
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String   @default("Admin User")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions Session[]
+}
+
+model Session {
+  id          String    @id @default(cuid())
+  // The bearer credential stored in the session cookie — a cryptographically
+  // random value (see lib/session.ts's createSession), never `id` itself.
+  token       String    @unique
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  adminUserId String
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([adminUserId])
+}
+
+enum ConsentStatus {
+  OPTED_IN
+  OPTED_OUT
+}
+
+model Contact {
+  id          String        @id @default(cuid())
+  name        String
+  phone       String        @unique
+  email       String
+  birthday    DateTime      @db.Date
+  coinBalance Int           @default(0)
+  consent     ConsentStatus @default(OPTED_OUT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  smsMessages SmsMessage[]
+}
+
+enum SmsStatus {
+  SENT
+  FAILED
+}
+
+model SmsMessage {
+  id            String    @id @default(cuid())
+  // Kept even if the contact is later deleted (onDelete: SetNull) — an audit
+  // trail of what was actually sent shouldn't disappear with the contact.
+  contact       Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId     String?
+  recipientName String
+  recipientPhone String
+  body          String    @db.Text
+  status        SmsStatus
+  // Twilio's message SID when status is SENT; the provider error message
+  // when status is FAILED. Null if the request never reached Twilio (e.g.
+  // Twilio isn't configured yet — see lib/twilio.ts).
+  providerRef   String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@index([contactId])
+}
