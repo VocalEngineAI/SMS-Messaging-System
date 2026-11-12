@@ -22,15 +22,13 @@ npm run dev
 ```
 
 Visit `http://localhost:3000` — it redirects to `/login`. Enter anything and submit to reach the
-dashboard (see "Placeholder behavior" below).
+contacts page (see "Placeholder behavior" below).
 
 ## Pages
 
 - `/login` — email/password UI (no real auth)
-- `/dashboard` — stat tiles + recent SMS activity
 - `/contacts` — contacts table, search, CSV import with preview, delete
 - `/send` — recipient picker, message composer, test send, confirm-and-send
-- `/history` — full SMS history table with search
 
 ## Placeholder behavior (clearly separated from real integration points)
 
@@ -38,11 +36,10 @@ Every "backend-shaped" action is simulated client-side and isolated so it's easy
 
 | Feature | File | What it does now | What it needs later |
 |---|---|---|---|
-| Login | `app/login/page.tsx` | Validates fields are non-empty, waits 500ms, navigates to `/dashboard` | Real auth call + session/cookie handling |
+| Login | `app/login/page.tsx` | Validates fields are non-empty, waits 500ms, navigates to `/contacts` | Real auth call + session/cookie handling |
 | Contacts | `lib/dummy-data.ts` | Static in-memory array, mutated via `useState` in `app/(app)/contacts/page.tsx` | Fetch/create/delete via an API |
 | CSV import | `lib/csv.ts`, `components/contacts/ImportCsvModal.tsx` | Parses the CSV file in the browser, flags duplicates/invalid rows against the current in-memory contact list | Upload the file to a backend endpoint that persists + validates server-side |
 | Send SMS | `app/(app)/send/page.tsx` | "Send Test SMS" and "Send SMS" both just `setTimeout` and show a success banner | Real send request to an SMS provider (e.g. Twilio) via a backend endpoint |
-| SMS History | `lib/dummy-data.ts` | Static array | Fetch from an API, likely paginated |
 
 No MySQL, Google Sheets, or Twilio integration exists anywhere in this codebase, per the project
 requirements — those are intentionally left as the documented next steps above.

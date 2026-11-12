@@ -47,12 +47,9 @@ html {
 }
 
 /*
- * App-shell fluid scale — sidebar/topbar sizing and shared spacing rhythm.
- * --sidebar-w is the single source of truth shared by Sidebar.tsx (width)
- * and AppShell.tsx (matching padding-left offset).
+ * App-shell fluid scale — topbar sizing and shared spacing rhythm.
  */
 :root {
-  --sidebar-w: clamp(220px, 2vw + 200px, 260px);
   --topbar-h: clamp(60px, 4vh + 36px, 76px);
 }
 

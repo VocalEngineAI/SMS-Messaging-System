@@ -2,24 +2,55 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, LogOut, Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ChevronDown, LogOut, Menu, Send, Users, X } from "lucide-react";
+import { cn } from "@/lib/cn";
+import { Logo } from "@/components/ui/Logo";
 
-type Props = {
-  onMenuClick: () => void;
-};
+const NAV_ITEMS = [
+  { href: "/contacts", label: "Contacts", icon: Users },
+  { href: "/send", label: "Send SMS", icon: Send },
+];
 
-export function TopBar({ onMenuClick }: Props) {
+export function TopBar() {
+  const pathname = usePathname();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   return (
-    <header className="topbar-h flex shrink-0 items-center gap-3 border-b border-subtle bg-card px-4 sm:gap-4 sm:px-6 lg:px-8">
+    <header className="topbar-h relative flex shrink-0 items-center gap-3 border-b border-subtle bg-card px-4 sm:gap-6 sm:px-6 lg:px-8">
+      <Link href="/contacts" className="flex shrink-0 items-center">
+        <Logo size={48} />
+      </Link>
+
+      <nav className="absolute inset-x-0 hidden items-center justify-center gap-2 lg:flex">
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex min-h-10 items-center gap-2 border-b-2 px-3 text-sm font-medium transition-colors",
+                isActive ? "border-ink text-primary" : "border-transparent text-secondary hover:text-primary",
+              )}
+            >
+              <Icon size={16} />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
       <button
         type="button"
-        onClick={onMenuClick}
+        onClick={() => setIsNavOpen((open) => !open)}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-subtle text-secondary hover:text-primary lg:hidden"
-        aria-label="Open menu"
+        aria-label={isNavOpen ? "Close menu" : "Open menu"}
+        aria-expanded={isNavOpen}
       >
-        <Menu size={20} />
+        {isNavOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       <div className="ml-auto flex items-center gap-3">
@@ -62,6 +93,32 @@ export function TopBar({ onMenuClick }: Props) {
           )}
         </div>
       </div>
+
+      {isNavOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setIsNavOpen(false)} aria-hidden="true" />
+          <nav className="absolute inset-x-0 top-full z-50 flex flex-col gap-1 border-b border-subtle bg-card p-3 shadow-lg lg:hidden">
+            {NAV_ITEMS.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsNavOpen(false)}
+                  className={cn(
+                    "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+                    isActive ? "bg-ink text-white" : "text-secondary hover:bg-app hover:text-primary",
+                  )}
+                >
+                  <Icon size={18} />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </>
+      )}
     </header>
   );
 }

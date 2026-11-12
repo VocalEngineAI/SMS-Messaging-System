@@ -4,16 +4,17 @@ import { cn } from "@/lib/cn";
 type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: ReactNode;
   error?: string;
+  containerClassName?: string;
 };
 
-export function Textarea({ label, error, id, className, ...props }: Props) {
+export function Textarea({ label, error, id, className, containerClassName, ...props }: Props) {
   const generatedId = useId();
   const textareaId = id ?? generatedId;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex min-h-0 flex-col gap-2", containerClassName)}>
       {label && (
-        <label htmlFor={textareaId} className="text-sm font-semibold text-primary">
+        <label htmlFor={textareaId} className="shrink-0 text-sm font-semibold text-primary">
           {label}
         </label>
       )}
@@ -27,7 +28,7 @@ export function Textarea({ label, error, id, className, ...props }: Props) {
         aria-invalid={Boolean(error)}
         {...props}
       />
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p className="shrink-0 text-sm text-danger">{error}</p>}
     </div>
   );
 }

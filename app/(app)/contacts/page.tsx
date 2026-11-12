@@ -10,19 +10,21 @@ import { Input } from "@/components/ui/Input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ImportCsvModal } from "@/components/contacts/ImportCsvModal";
 import { Pagination } from "@/components/ui/Pagination";
+import { useToast } from "@/components/ui/Toast";
 import { DUMMY_CONTACTS } from "@/lib/dummy-data";
+import { formatBirthday } from "@/lib/date";
 import type { Contact, ConsentStatus } from "@/types/contact";
 import type { ParsedCsvRow } from "@/lib/csv";
 
 const CONSENT_TONE: Record<ConsentStatus, "success" | "warning" | "danger"> = {
   "Opted In": "success",
-  Pending: "warning",
   "Opted Out": "danger",
 };
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 50;
 
 export default function ContactsPage() {
+  const { showToast } = useToast();
   const [contacts, setContacts] = useState<Contact[]>(DUMMY_CONTACTS);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -36,7 +38,7 @@ export default function ContactsPage() {
       (contact) =>
         contact.name.toLowerCase().includes(query) ||
         contact.phone.toLowerCase().includes(query) ||
-        contact.business.toLowerCase().includes(query),
+        contact.email.toLowerCase().includes(query),
     );
   }, [contacts, search]);
 
@@ -56,16 +58,24 @@ export default function ContactsPage() {
         id: `imported-${Date.now()}-${index}`,
         name: row.name,
         phone: row.phone,
-        business: row.business,
-        consent: "Pending" as ConsentStatus,
+        email: row.email,
+        birthday: row.birthday,
+        coinBalance: row.coinBalance,
+        consent: row.consent,
       }));
     setContacts((current) => [...newContacts, ...current]);
     setPage(1);
+    if (newContacts.length > 0) {
+      showToast(`Imported ${newContacts.length} contact${newContacts.length === 1 ? "" : "s"} successfully.`, "success");
+    } else {
+      showToast("No valid contacts were found to import.", "error");
+    }
   }
 
   function handleConfirmDelete() {
     if (!contactToDelete) return;
     setContacts((current) => current.filter((c) => c.id !== contactToDelete.id));
+    showToast(`Deleted ${contactToDelete.name}.`, "success");
     setContactToDelete(null);
   }
 
@@ -85,7 +95,7 @@ export default function ContactsPage() {
       <Card>
         <CardContent className="p-4">
           <Input
-            placeholder="Search by name, phone, or business..."
+            placeholder="Search by name, phone, or email..."
             icon={<Search size={16} />}
             value={search}
             onChange={(event) => handleSearchChange(event.target.value)}
@@ -96,19 +106,25 @@ export default function ContactsPage() {
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-subtle text-secondary">
+                <th className="px-5 py-3 font-medium">#</th>
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Phone Number</th>
-                <th className="px-5 py-3 font-medium">Business</th>
+                <th className="px-5 py-3 font-medium">Email</th>
+                <th className="px-5 py-3 font-medium">Birthday</th>
+                <th className="px-5 py-3 font-medium">Coin Balance</th>
                 <th className="px-5 py-3 font-medium">Consent Status</th>
                 <th className="px-5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedContacts.map((contact) => (
+              {paginatedContacts.map((contact, index) => (
                 <tr key={contact.id} className="border-b border-subtle last:border-0">
+                  <td className="px-5 py-3 text-secondary">{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
                   <td className="px-5 py-3 font-medium text-primary">{contact.name}</td>
                   <td className="px-5 py-3 text-secondary">{contact.phone}</td>
-                  <td className="px-5 py-3 text-secondary">{contact.business}</td>
+                  <td className="px-5 py-3 text-secondary">{contact.email}</td>
+                  <td className="px-5 py-3 text-secondary">{formatBirthday(contact.birthday)}</td>
+                  <td className="px-5 py-3 text-secondary">{contact.coinBalance}</td>
                   <td className="px-5 py-3">
                     <Badge tone={CONSENT_TONE[contact.consent]}>{contact.consent}</Badge>
                   </td>
@@ -118,7 +134,7 @@ export default function ContactsPage() {
                       size="icon"
                       aria-label={`Delete ${contact.name}`}
                       onClick={() => setContactToDelete(contact)}
-                      className="text-secondary hover:bg-danger/10 hover:text-danger"
+                      className="text-danger hover:bg-danger/10"
                     >
                       <Trash2 size={16} />
                     </Button>
@@ -127,7 +143,7 @@ export default function ContactsPage() {
               ))}
               {filteredContacts.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-secondary">
+                  <td colSpan={8} className="px-5 py-10 text-center text-secondary">
                     No contacts match your search.
                   </td>
                 </tr>

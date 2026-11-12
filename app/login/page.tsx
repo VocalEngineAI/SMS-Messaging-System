@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // Frontend-only placeholder: no real authentication, this just validates
-  // the fields are filled in and navigates to the dashboard. Wire this up
+  // the fields are filled in and navigates to the contacts page. Wire this up
   // to a real auth endpoint when the backend exists.
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,7 +34,7 @@ export default function LoginPage() {
 
     setIsLoading(true);
     setTimeout(() => {
-      router.push("/dashboard");
+      router.push("/contacts");
     }, 500);
   }
 

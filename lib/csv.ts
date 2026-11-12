@@ -1,9 +1,12 @@
-import type { Contact } from "@/types/contact";
+import type { Contact, ConsentStatus } from "@/types/contact";
 
 export type ParsedCsvRow = {
   name: string;
   phone: string;
-  business: string;
+  email: string;
+  birthday: string;
+  coinBalance: number;
+  consent: ConsentStatus;
   rowStatus: "valid" | "duplicate" | "invalid";
 };
 
@@ -16,12 +19,13 @@ export type CsvImportResult = {
 };
 
 const PHONE_PATTERN = /^[+()\d][\d\s().-]{6,}$/;
+const CONSENT_VALUES: ConsentStatus[] = ["Opted In", "Opted Out"];
 
 /*
- * Expects a simple "name,phone,business" header row followed by data rows.
- * This is a frontend-only simulation — no file is uploaded anywhere; it's
- * parsed entirely in the browser so the import preview has real rows to
- * show instead of static placeholders.
+ * Expects a simple "name,phone,email,birthday,coinBalance,consent" header
+ * row followed by data rows. This is a frontend-only simulation — no file
+ * is uploaded anywhere; it's parsed entirely in the browser so the import
+ * preview has real rows to show instead of static placeholders.
  */
 export function parseContactsCsv(csvText: string, existingContacts: Contact[]): CsvImportResult {
   const lines = csvText
@@ -37,8 +41,11 @@ export function parseContactsCsv(csvText: string, existingContacts: Contact[]): 
 
   for (const line of dataLines) {
     const columns = line.split(",").map((value) => value.trim());
-    const [name = "", phone = "", business = ""] = columns;
+    const [name = "", phone = "", email = "", birthday = "", coinBalanceRaw = "", consentRaw = ""] = columns;
     const normalizedPhone = normalizePhone(phone);
+    const coinBalance = Number(coinBalanceRaw) || 0;
+    const consent = (CONSENT_VALUES.find((value) => value.toLowerCase() === consentRaw.toLowerCase()) ??
+      "Opted Out") as ConsentStatus;
 
     let rowStatus: ParsedCsvRow["rowStatus"] = "valid";
     if (!name || !phone || !PHONE_PATTERN.test(phone)) {
@@ -48,7 +55,7 @@ export function parseContactsCsv(csvText: string, existingContacts: Contact[]): 
     }
 
     seenPhones.add(normalizedPhone);
-    rows.push({ name, phone, business, rowStatus });
+    rows.push({ name, phone, email, birthday, coinBalance, consent, rowStatus });
   }
 
   const importedCount = rows.filter((r) => r.rowStatus === "valid").length;

@@ -1,9 +1,11 @@
-export type ConsentStatus = "Opted In" | "Opted Out" | "Pending";
+export type ConsentStatus = "Opted In" | "Opted Out";
 
 export type Contact = {
   id: string;
   name: string;
   phone: string;
-  business: string;
+  email: string;
+  birthday: string;
+  coinBalance: number;
   consent: ConsentStatus;
 };
